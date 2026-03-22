@@ -1,7 +1,4 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
+// Run: npx prisma migrate dev   (or db push) — do not commit secrets
 
 generator client {
   provider = "prisma-client"
@@ -10,4 +7,110 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+model Gym {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String?  @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users       User[]
+  members     Member[]
+  plans       Plan[]
+  memberships Membership[]
+  payments    Payment[]
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  gymId        String
+  gym          Gym      @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([gymId])
+}
+
+model Member {
+  id        String   @id @default(cuid())
+  gymId     String
+  gym       Gym      @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  name      String
+  phone     String?  @unique
+  email     String?  @unique
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  memberships Membership[]
+
+  @@index([gymId])
+  @@index([gymId, createdAt])
+}
+
+model Plan {
+  id           String   @id @default(cuid())
+  gymId        String
+  gym          Gym      @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  name         String
+  durationDays Int
+  price        Decimal  @db.Decimal(10, 2)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  memberships Membership[]
+
+  @@index([gymId])
+}
+
+model Membership {
+  id        String   @id @default(cuid())
+  gymId     String
+  gym       Gym      @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  memberId  String
+  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  planId    String
+  plan      Plan     @relation(fields: [planId], references: [id], onDelete: Restrict)
+  /// Total amount due for this membership (snapshot of plan price at creation). Legacy rows may be null; use plan.price as fallback when reading.
+  amountDue Decimal? @db.Decimal(10, 2)
+  startDate DateTime
+  endDate   DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  payments Payment[]
+
+  @@index([gymId])
+  @@index([gymId, endDate])
+  @@index([memberId])
+}
+
+model Payment {
+  id           String        @id @default(cuid())
+  gymId        String
+  gym          Gym           @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  membershipId String
+  membership   Membership    @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  amount       Decimal       @db.Decimal(10, 2)
+  paidAt       DateTime
+  method       PaymentMethod
+  reference    String?
+  createdAt    DateTime      @default(now())
+
+  @@index([gymId])
+  @@index([gymId, paidAt])
+  @@index([membershipId])
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  UPI
+  OTHER
 }
