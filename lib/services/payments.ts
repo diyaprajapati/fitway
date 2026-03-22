@@ -1,4 +1,9 @@
+import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
+
+export type PaymentWithMembership = Prisma.PaymentGetPayload<{
+  include: { membership: { include: { member: true; plan: true } } };
+}>;
 import {
   buildPaymentSummary,
   enforcePaymentWithinBalance,
@@ -39,7 +44,7 @@ export async function createPayment(
     method: PaymentMethodInput;
     reference?: string | null;
   },
-): Promise<{ payment: Awaited<ReturnType<typeof prisma.payment.create>>; paymentSummary: PaymentSummary }> {
+): Promise<{ payment: PaymentWithMembership; paymentSummary: PaymentSummary }> {
   return prisma.$transaction(async (tx) => {
     const membership = await tx.membership.findFirst({
       where: { id: data.membershipId, gymId },

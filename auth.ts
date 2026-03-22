@@ -1,10 +1,23 @@
+import { JWTSessionError } from "@auth/core/errors";
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { verifyCredentials } from "@/lib/auth-credentials";
 
+/** Prefer `AUTH_SECRET`; `NEXTAUTH_SECRET` matches older NextAuth setups. */
+const authSecret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
+  /** Stable JWT encryption; must match the key used when the session cookie was issued. */
+  secret: authSecret,
   session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60 },
+  /** Stale cookies (after secret rotation) can't be decrypted; the session handler clears them — avoid error spam. */
+  logger: {
+    error(error) {
+      if (error instanceof JWTSessionError) return;
+      console.error("[auth]", error);
+    },
+  },
   providers: [
     Credentials({
       name: "credentials",

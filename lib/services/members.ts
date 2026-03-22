@@ -48,6 +48,60 @@ export async function createMember(
   });
 }
 
+function addDaysUtc(date: Date, days: number): Date {
+  const d = new Date(date.getTime());
+  d.setUTCDate(d.getUTCDate() + days);
+  return d;
+}
+
+/** Creates a member and their first membership in one transaction. */
+export async function createMemberWithMembership(
+  gymId: string,
+  data: {
+    name: string;
+    phone?: string | null;
+    email?: string | null;
+    notes?: string | null;
+    planId: string;
+    startDate: Date;
+  },
+) {
+  const email = data.email == null ? undefined : normalizeOptionalString(data.email);
+  const phone = data.phone == null ? undefined : normalizeOptionalString(data.phone);
+
+  return prisma.$transaction(async (tx) => {
+    const member = await tx.member.create({
+      data: {
+        gymId,
+        name: data.name.trim(),
+        phone: phone ?? undefined,
+        email: email ?? undefined,
+        notes: normalizeOptionalString(data.notes ?? undefined) ?? undefined,
+      },
+    });
+
+    const plan = await tx.plan.findFirst({
+      where: { id: data.planId, gymId, active: true },
+    });
+    if (!plan) throw new Error("Plan not found");
+
+    const endDate = addDaysUtc(data.startDate, plan.durationDays);
+
+    await tx.membership.create({
+      data: {
+        gymId,
+        memberId: member.id,
+        planId: plan.id,
+        amountDue: plan.price,
+        startDate: data.startDate,
+        endDate,
+      },
+    });
+
+    return member;
+  });
+}
+
 export async function updateMember(
   gymId: string,
   id: string,
