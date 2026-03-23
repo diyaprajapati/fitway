@@ -55,16 +55,18 @@ export default async function MembersPage({
           </li>
         ) : (
           members.map((m) => (
-            <li
-              key={m.id}
-              className="rounded-2xl border border-border bg-card px-4 py-3 shadow-sm"
-            >
-              <p className="font-medium">{m.name}</p>
-              <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-sm text-muted-foreground">
-                {m.email ? <span>{m.email}</span> : null}
-                {m.phone ? <span>{m.phone}</span> : null}
-                {!m.email && !m.phone ? <span>No contact</span> : null}
-              </div>
+            <li key={m.id}>
+              <Link
+                href={`/members/${m.id}`}
+                className="block rounded-2xl border border-border bg-card px-4 py-3 shadow-sm transition-colors hover:bg-muted/40 active:bg-muted/60"
+              >
+                <p className="font-medium">{m.name}</p>
+                <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-sm text-muted-foreground">
+                  {m.email ? <span>{m.email}</span> : null}
+                  {m.phone ? <span>{m.phone}</span> : null}
+                  {!m.email && !m.phone ? <span>No contact</span> : null}
+                </div>
+              </Link>
             </li>
           ))
         )}

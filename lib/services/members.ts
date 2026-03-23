@@ -30,6 +30,22 @@ export async function getMember(gymId: string, id: string) {
   });
 }
 
+/** Member with memberships (plan + payments) for detail screen. */
+export async function getMemberDetail(gymId: string, memberId: string) {
+  return prisma.member.findFirst({
+    where: { id: memberId, gymId },
+    include: {
+      memberships: {
+        orderBy: { endDate: "desc" },
+        include: {
+          plan: true,
+          payments: { orderBy: { paidAt: "desc" } },
+        },
+      },
+    },
+  });
+}
+
 export async function createMember(
   gymId: string,
   data: { name: string; phone?: string | null; email?: string | null; notes?: string | null },
