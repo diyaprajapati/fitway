@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { auth } from "@/auth";
+import { MembershipPaymentSection } from "@/components/members/membership-payment-section";
 import { batchPaymentSummariesForMemberships } from "@/lib/services/membership-payment-summary";
 import { getMemberDetail } from "@/lib/services/members";
 import { requireGymSession } from "@/lib/server/gym-auth";
@@ -25,6 +26,12 @@ function formatDate(d: Date) {
   return new Intl.DateTimeFormat(undefined, {
     dateStyle: "medium",
   }).format(d);
+}
+
+/** Value for `datetime-local` in the owner's local timezone (set on server from `new Date()`). */
+function toDatetimeLocalValue(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 function statusLabel(status: ReturnType<typeof getExpiryStatus>) {
@@ -70,6 +77,7 @@ export default async function MemberDetailPage({ params }: PageProps) {
 
   const summaries = await batchPaymentSummariesForMemberships(member.memberships);
   const now = new Date();
+  const defaultPaidAtLocal = toDatetimeLocalValue(now);
 
   return (
     <div className="flex flex-col gap-6">
@@ -169,6 +177,18 @@ export default async function MemberDetailPage({ params }: PageProps) {
                         ))}
                       </ul>
                     </div>
+                  ) : null}
+
+                  {summary ? (
+                    <MembershipPaymentSection
+                      key={`${m.id}-${summary.paidTotal}-${summary.remaining}-${summary.isFullyPaid}`}
+                      membershipId={m.id}
+                      memberId={member.id}
+                      isFullyPaid={summary.isFullyPaid}
+                      remaining={Number(summary.remaining)}
+                      remainingLabel={formatInr(Number(summary.remaining))}
+                      defaultPaidAtLocal={defaultPaidAtLocal}
+                    />
                   ) : null}
                 </li>
               );
