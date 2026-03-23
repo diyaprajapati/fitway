@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
 
-import { getDashboardStats } from "@/lib/services/analytics";
+import { DashboardCharts } from "@/components/dashboard/dashboard-charts";
+import {
+  getDailyRevenue,
+  getDashboardStats,
+  getMembershipBuckets,
+} from "@/lib/services/analytics";
 import { requireGymSession } from "@/lib/server/gym-auth";
 
 export const metadata: Metadata = {
@@ -18,11 +23,22 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
 
 export default async function DashboardPage() {
   const { gymId } = await requireGymSession();
-  const stats = await getDashboardStats(gymId);
+  const [stats, buckets, dailyRevenue] = await Promise.all([
+    getDashboardStats(gymId),
+    getMembershipBuckets(gymId),
+    getDailyRevenue(gymId, 14),
+  ]);
+
   const revenue = Number(stats.revenueTotal);
   const revenueLabel = new Intl.NumberFormat(undefined, { style: "currency", currency: "INR" }).format(
     Number.isFinite(revenue) ? revenue : 0,
   );
+
+  const membershipBars = [
+    { key: "expired", label: "Expired", value: buckets.expired, fillVar: "--chart-3" },
+    { key: "expiring", label: "Expiring (7d)", value: buckets.expiringSoon, fillVar: "--chart-2" },
+    { key: "active", label: "Active (7d+)", value: buckets.activeLater, fillVar: "--chart-1" },
+  ];
 
   return (
     <div className="flex flex-col gap-6">
@@ -36,6 +52,8 @@ export default async function DashboardPage() {
         <StatCard label="Expired" value={stats.expiredMemberships} />
         <StatCard label="Total revenue" value={revenueLabel} />
       </div>
+
+      <DashboardCharts dailyRevenue={dailyRevenue} membershipBars={membershipBars} />
     </div>
   );
 }
