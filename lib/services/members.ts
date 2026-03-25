@@ -1,4 +1,9 @@
 import { prisma } from "@/lib/db";
+import {
+  enforcePaymentWithinBalance,
+  effectiveAmountDue,
+} from "@/lib/services/membership-payment-summary";
+import type { PaymentMethodInput } from "@/lib/services/payments";
 
 function normalizeOptionalString(v: string | null | undefined): string | undefined {
   if (v == null) return undefined;
@@ -115,6 +120,85 @@ export async function createMemberWithMembership(
     });
 
     return member;
+  });
+}
+
+/** Member + first membership, optional first payment — one atomic transaction per row. */
+export async function createMemberWithMembershipAndOptionalPayment(
+  gymId: string,
+  data: {
+    name: string;
+    phone?: string | null;
+    email?: string | null;
+    notes?: string | null;
+    planId: string;
+    startDate: Date;
+    payment?:
+      | {
+          amount: number;
+          paidAt: Date;
+          method: PaymentMethodInput;
+          reference?: string | null;
+        }
+      | null;
+  },
+) {
+  const email = data.email == null ? undefined : normalizeOptionalString(data.email);
+  const phone = data.phone == null ? undefined : normalizeOptionalString(data.phone);
+
+  return prisma.$transaction(async (tx) => {
+    const member = await tx.member.create({
+      data: {
+        gymId,
+        name: data.name.trim(),
+        phone: phone ?? undefined,
+        email: email ?? undefined,
+        notes: normalizeOptionalString(data.notes ?? undefined) ?? undefined,
+      },
+    });
+
+    const plan = await tx.plan.findFirst({
+      where: { id: data.planId, gymId, active: true },
+    });
+    if (!plan) throw new Error("Plan not found");
+
+    const endDate = addDaysUtc(data.startDate, plan.durationDays);
+
+    const membership = await tx.membership.create({
+      data: {
+        gymId,
+        memberId: member.id,
+        planId: plan.id,
+        amountDue: plan.price,
+        startDate: data.startDate,
+        endDate,
+      },
+    });
+
+    const pay = data.payment;
+    if (pay && pay.amount > 0) {
+      const dueStr = effectiveAmountDue(membership.amountDue, plan.price);
+      const aggBefore = await tx.payment.aggregate({
+        where: { membershipId: membership.id },
+        _sum: { amount: true },
+      });
+      const paidStrBefore = aggBefore._sum.amount ? aggBefore._sum.amount.toString() : "0";
+
+      enforcePaymentWithinBalance(dueStr, paidStrBefore, pay.amount);
+
+      await tx.payment.create({
+        data: {
+          gymId,
+          membershipId: membership.id,
+          amount: pay.amount,
+          paidAt: pay.paidAt,
+          method: pay.method as "CASH" | "CARD" | "UPI" | "OTHER",
+          reference: pay.reference ?? undefined,
+        },
+      });
+    }
+
+    return { member, membershipId: membership.id };
   });
 }
 

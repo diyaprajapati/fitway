@@ -29,9 +29,17 @@ export default async function MembersPage({
           <h2 className="text-xl font-semibold tracking-tight">Members</h2>
           <p className="mt-1 text-sm text-muted-foreground">{members.length} total</p>
         </div>
-        <Link href="/members/new" className={cn(buttonVariants(), "inline-flex shrink-0 text-center")}>
-          Add member
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/members/new" className={cn(buttonVariants(), "inline-flex shrink-0 justify-center text-center")}>
+            Add member
+          </Link>
+          <Link
+            href="/members/import"
+            className={cn(buttonVariants({ variant: "secondary" }), "inline-flex shrink-0 justify-center text-center")}
+          >
+            Import CSV
+          </Link>
+        </div>
       </div>
 
       <form method="get" className="flex gap-2">

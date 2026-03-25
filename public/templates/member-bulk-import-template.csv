@@ -1,0 +1,2 @@
+name,phone,email,notes,plan_name,start_date,payment_amount,payment_date,payment_method,payment_reference
+Sample Member,9876543210,sample@example.com,any required notes,Monthly,15-01-2025,1500.00,15-01-2025,CASH,
