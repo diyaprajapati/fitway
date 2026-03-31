@@ -21,6 +21,7 @@ const patchSchema = z.object({
   phone: z.string().max(50).nullable().optional(),
   email: z.string().email().nullable().optional(),
   notes: z.string().max(5000).nullable().optional(),
+  meta: z.record(z.string(), z.unknown()).nullable().optional(),
 });
 
 export async function PATCH(req: Request, ctx: RouteContext) {
@@ -42,7 +43,10 @@ export async function PATCH(req: Request, ctx: RouteContext) {
   }
 
   try {
-    const member = await updateMember(auth.session.gymId, id, parsed.data);
+    const member = await updateMember(auth.session.gymId, id, {
+      ...parsed.data,
+      meta: parsed.data.meta === undefined ? undefined : (parsed.data.meta as unknown as import("@/generated/prisma/client").Prisma.InputJsonValue | null),
+    });
     return jsonOk(member);
   } catch (e) {
     if (isUniqueViolation(e)) {

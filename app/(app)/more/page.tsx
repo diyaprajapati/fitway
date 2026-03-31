@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import { signOutAction } from "@/app/actions/auth";
 import { auth } from "@/auth";
 import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
+import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "More",
@@ -25,6 +28,13 @@ export default async function MorePage() {
           <p className="mt-0.5 text-sm text-muted-foreground">{session.user.name}</p>
         ) : null}
       </div>
+
+      <Link
+        href="/settings/form"
+        className={cn(buttonVariants({ variant: "secondary" }), "h-11 w-full justify-center")}
+      >
+        Public registration form
+      </Link>
 
       <form action={signOutAction}>
         <Button type="submit" variant="secondary" className="w-full">

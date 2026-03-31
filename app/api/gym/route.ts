@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { requireGymSession } from "@/lib/api/session";
 import { jsonError, jsonOk } from "@/lib/api/json";
+import { storedMemberFormConfigSchema } from "@/lib/member-form-config";
 import { getGymById, updateGym } from "@/lib/services/gym";
 
 export async function GET(req: Request) {
@@ -16,6 +17,7 @@ export async function GET(req: Request) {
 const patchSchema = z.object({
   name: z.string().min(1).max(200).optional(),
   slug: z.string().min(1).max(80).nullable().optional(),
+  memberFormConfig: storedMemberFormConfigSchema.optional(),
 });
 
 export async function PATCH(req: Request) {

@@ -13,6 +13,8 @@ model Gym {
   id        String   @id @default(cuid())
   name      String
   slug      String?  @unique
+  /// Optional public join form: which extra fields to show (see lib/member-form-config.ts).
+  memberFormConfig Json?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -41,14 +43,17 @@ model Member {
   gymId     String
   gym       Gym      @relation(fields: [gymId], references: [id], onDelete: Cascade)
   name      String
-  phone     String?  @unique
+  phone     String?
   email     String?  @unique
   notes     String?
+  /// Public registration extras (age, goal, etc.); see lib/member-form-config.ts.
+  meta      Json?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   memberships Membership[]
 
+  @@unique([gymId, phone])
   @@index([gymId])
   @@index([gymId, createdAt])
 }

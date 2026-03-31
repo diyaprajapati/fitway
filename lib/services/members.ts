@@ -1,3 +1,4 @@
+import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import {
   enforcePaymentWithinBalance,
@@ -205,13 +206,20 @@ export async function createMemberWithMembershipAndOptionalPayment(
 export async function updateMember(
   gymId: string,
   id: string,
-  data: { name?: string; phone?: string | null; email?: string | null; notes?: string | null },
+  data: {
+    name?: string;
+    phone?: string | null;
+    email?: string | null;
+    notes?: string | null;
+    meta?: Prisma.InputJsonValue | null;
+  },
 ) {
   const payload: {
     name?: string;
     phone?: string | null;
     email?: string | null;
     notes?: string | null;
+    meta?: Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput;
   } = {};
 
   if (data.name !== undefined) payload.name = data.name.trim();
@@ -233,6 +241,9 @@ export async function updateMember(
   }
   if (data.notes !== undefined) {
     payload.notes = data.notes === null ? null : normalizeOptionalString(data.notes) ?? null;
+  }
+  if (data.meta !== undefined) {
+    payload.meta = data.meta === null ? Prisma.JsonNull : data.meta;
   }
 
   return prisma.member.update({

@@ -12,7 +12,7 @@ export function uniqueViolationMessage(e: Prisma.PrismaClientKnownRequestError):
     return "This email is already used by another member";
   }
   if (fields.includes("phone")) {
-    return "This phone number is already used by another member";
+    return "This phone number is already registered at this gym";
   }
   return "This value must be unique (email and phone cannot repeat across members)";
 }

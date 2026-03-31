@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 
 import { auth } from "@/auth";
 import { MembershipPaymentSection } from "@/components/members/membership-payment-section";
+import { MemberEditSection } from "@/components/members/member-edit-section";
 import { batchPaymentSummariesForMemberships } from "@/lib/services/membership-payment-summary";
 import { getMemberDetail } from "@/lib/services/members";
 import { requireGymSession } from "@/lib/server/gym-auth";
@@ -78,6 +79,28 @@ export default async function MemberDetailPage({ params }: PageProps) {
   const summaries = await batchPaymentSummariesForMemberships(member.memberships);
   const now = new Date();
   const defaultPaidAtLocal = toDatetimeLocalValue(now);
+  const meta = member.meta && typeof member.meta === "object" && !Array.isArray(member.meta) ? (member.meta as Record<string, unknown>) : null;
+
+  const regPairs: Array<{ label: string; value: string }> = [];
+  if (meta) {
+    const push = (label: string, v: unknown) => {
+      if (v === undefined || v === null) return;
+      if (typeof v === "string") {
+        const s = v.trim();
+        if (s) regPairs.push({ label, value: s });
+        return;
+      }
+      if (typeof v === "number" && Number.isFinite(v)) {
+        regPairs.push({ label, value: String(v) });
+      }
+    };
+    push("Age", meta.age);
+    push("Gender", meta.gender);
+    push("Weight (kg)", meta.weight);
+    push("Height (cm)", meta.height);
+    push("Goal", meta.goal);
+    push("Registration notes", meta.notes);
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -103,12 +126,37 @@ export default async function MemberDetailPage({ params }: PageProps) {
         </dl>
       </section>
 
+      {regPairs.length > 0 ? (
+        <section className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+          <h3 className="text-sm font-medium text-muted-foreground">Registration details</h3>
+          <dl className="mt-3 space-y-2 text-sm">
+            {regPairs.map((p) => (
+              <div key={p.label} className="flex justify-between gap-4">
+                <dt className="text-muted-foreground">{p.label}</dt>
+                <dd className="text-right font-medium">{p.value}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      ) : null}
+
       {member.notes ? (
         <section className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-          <h3 className="text-sm font-medium text-muted-foreground">Notes</h3>
+          <h3 className="text-sm font-medium text-muted-foreground">Internal notes</h3>
           <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed">{member.notes}</p>
         </section>
       ) : null}
+
+      <MemberEditSection
+        member={{
+          id: member.id,
+          name: member.name,
+          email: member.email,
+          phone: member.phone,
+          notes: member.notes,
+          meta: member.meta,
+        }}
+      />
 
       <section className="flex flex-col gap-3">
         <h3 className="text-sm font-medium text-muted-foreground">Memberships</h3>

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { DashboardCharts } from "@/components/dashboard/dashboard-charts";
+import { MemberRegistrationQrSection } from "@/components/dashboard/member-registration-qr";
 import {
   getDailyRevenue,
   getDashboardStats,
@@ -52,6 +53,8 @@ export default async function DashboardPage() {
         <StatCard label="Expired" value={stats.expiredMemberships} />
         <StatCard label="Total revenue" value={revenueLabel} />
       </div>
+
+      <MemberRegistrationQrSection gymId={gymId} />
 
       <DashboardCharts dailyRevenue={dailyRevenue} membershipBars={membershipBars} />
     </div>

@@ -23,7 +23,10 @@ export function BottomNav() {
     >
       <div className="mx-auto flex max-w-md items-stretch justify-around px-2">
         {items.map(({ href, label, icon: Icon }) => {
-          const active = pathname === href || (href !== "/dashboard" && pathname.startsWith(href));
+          const active =
+            pathname === href ||
+            (href !== "/dashboard" && pathname.startsWith(href)) ||
+            (href === "/more" && pathname.startsWith("/settings"));
           return (
             <Link
               key={href}

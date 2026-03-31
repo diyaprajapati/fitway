@@ -2,7 +2,10 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { verifyBearerToken } from "@/lib/api/session";
 
-/** Runs only for `matcher` routes below — every hit must present a valid Bearer token. */
+/**
+ * Runs only for matcher routes below — every hit must present a valid Bearer token.
+ * Public routes (e.g. /api/public/register and /gym/.../register) are not matched here.
+ */
 export async function middleware(request: NextRequest) {
   try {
     const session = await verifyBearerToken(request);
